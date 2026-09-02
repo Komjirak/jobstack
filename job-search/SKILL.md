@@ -123,11 +123,19 @@ echo "{\"skill\":\"job-search\",\"ts\":\"$(date -u +%Y-%m-%dT%H:%M:%SZ)\",\"pid\
 프로필이 존재하면(`PROFILE_EXISTS=true`) 프로필에서 희망 직무, 기술스택, 경력 수준을 확인합니다.
 
 프로필이 없거나 정보가 부족하면 AskUserQuestion으로 확인:
-- 희망 직무 (예: 백엔드 개발자, 프론트엔드 개발자, 데이터 엔지니어)
+- 희망 직무 (예: 프로덕트 매니저(PM), 서비스 기획, PO, 프로덕트 오너, 사업기획/전략기획, 그로스, 데이터 분석, 백엔드/프론트엔드 개발자)
 - 희망 산업/기업 유형 (대기업, 스타트업, 공기업, 외국계)
 - 경력 수준 (신입, 중고신입(경력 6개월~3년, 신입 공고 지원), 1~3년, 3~5년, 5년+)
 - 희망 지역 (서울, 판교, 원격 등)
 - 연봉 기대 범위 (선택)
+
+> **PM·기획 직군 키워드 프리셋 (기본 경로 = 키워드 검색)**
+> 원티드·사람인·잡코리아·점핏 모두 이 스킬의 1차 경로는 **키워드 검색**이므로, PM/기획 직군은 아래 키워드를 그대로 fetch-jobs.mjs 인수로 넣으면 됩니다(개발 직군처럼 카테고리 ID 불필요).
+> - **프로덕트 매니저/PM/PO**: `프로덕트 매니저`, `PM`, `Product Manager`, `PO`, `프로덕트 오너`
+> - **서비스/사업 기획**: `서비스 기획`, `사업기획`, `전략기획`, `프로덕트 기획`
+> - **그로스/데이터 기반 기획**: `그로스`, `Growth`, `데이터 분석가`, `프로덕트 애널리스트`
+> - 사용자가 "PM 공고"처럼 두루뭉술하게 물으면 위 그룹에서 2~3개 키워드로 병렬 검색해 합칩니다(플랫폼별 표기가 달라 단일 키워드는 누락이 큼). 도메인 조건이 있으면(예: 핀테크·커머스) 키워드에 도메인어를 덧붙입니다: `핀테크 PM`, `커머스 서비스 기획`.
+> - 예: `node "$_JS_BROWSER_SCRIPT" wanted "프로덕트 매니저" 20 experienced` / `node "$_JS_BIN/fetch-jobs.mjs" saramin "서비스 기획" 20 "" seoul 2>/dev/null`
 
 **필터 설계 상담 분기**: 사용자가 "어떻게 필터링하는 게 좋아 보여?"처럼 필터 설계 자체를 물으면, 실사용에서 관측된 필터 축을 제시하고 AskUserQuestion으로 2~3개 축을 고르게 한 뒤 Phase 2 검색 조건으로 변환합니다.
 - 필터 축: 회사 규모(현 직장 대비), B2C/B2B 여부, 지역, 경력 레벨, 선호 기업 유형(대기업/빅테크/스타트업), 유사기업 추천
@@ -248,9 +256,11 @@ node "$_JS_BROWSER_SCRIPT" wanted "{키워드}" 20 [entry|experienced]
 직무 카테고리에 맞는 API URL 사용:
 
 ```
-# 직무 카테고리 ID
+# 직무 카테고리 ID (개발 직군 전용 — 보조 경로에서만 사용)
 # 518 = 백엔드  872 = 프론트엔드  669 = 풀스택
 # 655 = DevOps/인프라  660 = 데이터 엔지니어  1 = 전체
+# ⚠️ PM·기획·그로스 등 비개발 직군은 카테고리 ID가 아니라 키워드 검색을 사용한다
+#    (Phase 1의 'PM·기획 직군 키워드 프리셋' 참조). tag_type_ids 대신 /search?query= 경로가 1차.
 
 # 기본 URL
 https://www.wanted.co.kr/api/v4/jobs?tag_type_ids={CATEGORY_ID}&country=kr&job_sort=job.latest_order&limit=20&offset=0
@@ -525,5 +535,5 @@ echo '{"skill":"job-search","ts":"'$(date -u +%Y-%m-%dT%H:%M:%SZ)'","pid":'$$',"
 
 이 마커를 빠뜨리지 말 것 — 위 조건에 해당하면 응답의 가장 마지막 줄에 반드시 포함한다.
 
-**프롬프트 스타일:** 명확하고 informative한 infographic/diagram 스타일. 실제 회사명·직무·매칭 점수·기술스택을 반영한다.
-예: `A clean professional infographic comparing 3 Korean software engineer job listings: AlgoCare (Series A, Seoul, Backend+LLM, match 85%), Samjjomsamm (FinTech SaaS, Seoul, Java/Kafka, match 92%), KakaoBank (판교, Spring AI, match 72%). Show tech stack icons, match score badges, company tiers. Dark navy background, white text, green/yellow accent for scores. Korean startup aesthetic.`
+**프롬프트 스타일:** 명확하고 informative한 infographic/diagram 스타일. 실제 회사명·직무·매칭 점수·핵심 역량을 반영한다. (PM/기획 직군은 기술스택 아이콘 대신 담당 영역·핵심 지표를 배지로 표현한다.)
+예: `A clean professional infographic comparing 3 Korean Product Manager job listings: AlgoCare (Series A, Seoul, Healthcare PM, match 85%), Toss (FinTech, Seoul, Growth PM, match 92%), Kurly (판교, Commerce PO, match 72%). Show domain badges (healthcare/fintech/commerce), focus areas (growth, retention, monetization), match score badges, company tiers. Dark navy background, white text, green/yellow accent for scores. Korean startup aesthetic.`
